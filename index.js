@@ -31,6 +31,7 @@ async function run() {
         await client.connect();
 
         const banglesCollection = client.db('banglesDB').collection('banglesCollection')
+        const userCollection = client.db('banglesDB').collection('userCollection')
 
 
         app.get('/mongo', async (req, res) => {
@@ -42,12 +43,27 @@ async function run() {
         })
         app.get('/bangles/itemDetails/:id', async (req, res) => {
             const id = req.params.id
-            const query = { _id: new ObjectId (id) }
+            const query = { _id: new ObjectId(id) }
             const result = await banglesCollection.findOne(query)
             res.send(result)
         })
+        app.get('/allUser', async (req, res) => {
+            const users = await userCollection.find().toArray()
+            res.send(users)
+        })
 
-
+        app.post('/emailPassword/users', async (req, res) => {
+            const { name, email } = req.body
+            const role = 'normalUser'
+            const data = { name, email, role }
+            const query = { email: email }
+            const existingUser = await userCollection.findOne(query)
+            if (existingUser) {
+                return res.status(409).send({ message: 'An account with this email already exists' })
+            }
+            const result = await userCollection.insertOne(data)
+            res.send(result)
+        })
 
 
 
