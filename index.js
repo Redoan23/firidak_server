@@ -32,26 +32,72 @@ async function run() {
 
         const banglesCollection = client.db('banglesDB').collection('banglesCollection')
         const userCollection = client.db('banglesDB').collection('userCollection')
+        const registerCollection = client.db('banglesDB').collection('registerCollection')
+        const pendingOrderCollection = client.db('banglesDB').collection('pendingOrderCollection')
+        const ordersDoneCollection = client.db('banglesDB').collection('ordersDoneCollection')
+        const extraInfoCollection = client.db('banglesDB').collection('extraInfoCollection')
 
 
-        app.get('/mongo', async (req, res) => {
-            res.send('mongo success')
-        })
+        // TODO: need to make the discount calculation here 
+
         app.get('/bangles', async (req, res) => {
             const result = await banglesCollection.find().toArray()
             res.send(result)
         })
+        app.post('/bangles', async (req, res) => {
+            const data = req.body
+            const result = await banglesCollection.insertOne(data)
+            res.send(result)
+        })
+
         app.get('/bangles/itemDetails/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             const result = await banglesCollection.findOne(query)
             res.send(result)
         })
+
+        // change stock status
+        app.patch('/bangles/:id', async (req, res) => {
+            const id = req.params.id
+            const { status } = req.body
+            const filter = { _id: new ObjectId(id) }
+            const updatedDoc = {
+                $set: {
+                    stockStatus: status
+                }
+            }
+            const options = { upsert: true }
+            const result = await banglesCollection.updateOne(filter, updatedDoc, options)
+            res.send(result)
+        })
+
+        // delete a bangle
+
+        app.delete('/deleteBangles/:id', async (req, res) => {
+            const id = req.params.id
+            const filter = { _id: new ObjectId(id) }
+            const result = await banglesCollection.deleteOne(filter)
+            res.send(result)
+        })
+
+        // find single user
+
+        app.get('/userData/:email', async (req, res) => {
+            const email = req.params.email
+            const query = { email: email }
+            const user = await userCollection.findOne(query)
+            res.send(user)
+        })
+
+        // get all user
+
         app.get('/allUser', async (req, res) => {
             const users = await userCollection.find().toArray()
             res.send(users)
         })
 
+        // save user info
         app.post('/emailPassword/users', async (req, res) => {
             const { name, email } = req.body
             const role = 'normalUser'
@@ -61,10 +107,106 @@ async function run() {
             if (existingUser) {
                 return res.status(409).send({ message: 'An account with this email already exists' })
             }
+            const info = { name }
+            const updateRegisterUser = await registerCollection.insertOne(info)
             const result = await userCollection.insertOne(data)
             res.send(result)
         })
 
+        // get the total registered user
+        app.get('/user/registered', async (req, res) => {
+            const result = await registerCollection.find().toArray()
+            res.send(result)
+        })
+
+        // modify user info
+        app.patch('/user/updateRole/:email', async (req, res) => {
+            const email = req?.params.email
+            const { userRole } = req?.body
+            const query = { email: email }
+            const updatedDoc = {
+                $set: { role: userRole }
+            }
+            const result = await userCollection.updateOne(query, updatedDoc)
+            res.send(result)
+        })
+
+        app.delete('/user/delete/:email', async (req, res) => {
+            const email = req.params.email
+            const query = { email: email }
+            const result = await userCollection.deleteOne(query)
+            res.send(result)
+        })
+
+
+        // user order data
+        app.post('/user/orderItems', async (req, res) => {
+            const data = req.body
+            const result = await pendingOrderCollection.insertOne(data)
+            res.send(result)
+        })
+
+        // get PendingOrders
+        app.get('/pendingOrders', async (req, res) => {
+            const result = await pendingOrderCollection.find().toArray()
+            res.send(result)
+        })
+
+
+        // order acception
+        app.post('/acceptOrder/:id', async (req, res) => {
+            const id = req.params.id
+            const data = req.body
+            const filter = { _id: new ObjectId(id) }
+            const removeFromPending = await pendingOrderCollection.deleteOne(filter)
+            if (removeFromPending) {
+                const result = await ordersDoneCollection.insertOne(data)
+                res.send(result)
+            }
+        })
+
+        // delete pending order
+        app.delete('/deleteOrder/:id', async (req, res) => {
+            const id = req.params.id
+            const filter = { _id: new ObjectId(id) }
+            const result = await pendingOrderCollection.deleteOne(filter)
+            res.send(result)
+        })
+
+
+        // get order lis from ordersDone collection
+        app.get('/ordersDone', async (req, res) => {
+            const result = await ordersDoneCollection.find().toArray()
+            res.send(result)
+        })
+
+        // delete from orders done collection
+        app.delete('/deleteAcceptedOrder/:id', async (req, res) => {
+            const id = req.params.id
+            const filter = { _id: id } //as it is saves the data without giving any new ObjectId, so this needs to be found only with _id, check database for clearance
+            const result = ordersDoneCollection.deleteOne(filter)
+            res.send(result)
+        })
+
+        // set extra info
+        app.put('/extraInfo', async (req, res) => {
+            const data = req.body
+            const updatedDoc = {
+                $set: {}
+            };
+
+            if (data.courierFee) {
+                updatedDoc.$set.courierFee = parseInt(data.courierFee);
+            }
+
+            if (data.homeDeliveryFee) {
+                updatedDoc.$set.homeDeliveryFee = parseInt(data.homeDeliveryFee);
+            }
+            const options = { upsert: true }
+            const filter = { name: data?.name }
+            const result = await extraInfoCollection.updateOne(filter, updatedDoc, options)
+            res.send(result)
+        })
 
 
         // Send a ping to confirm a successful connection
@@ -84,5 +226,5 @@ app.get('/', (req, res) => {
 })
 
 app.listen(port, () => {
-    console.log(`listening on the port${port}`)
+    console.log(`listening on the port ${port}`)
 })
