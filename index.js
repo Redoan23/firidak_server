@@ -181,6 +181,7 @@ async function run() {
         })
 
         // delete from orders done collection
+
         app.delete('/deleteAcceptedOrder/:id', async (req, res) => {
             const id = req.params.id
             const filter = { _id: id } //as it is saves the data without giving any new ObjectId, so this needs to be found only with _id, check database for clearance
@@ -188,7 +189,9 @@ async function run() {
             res.send(result)
         })
 
+
         // set extra info
+
         app.put('/extraInfo', async (req, res) => {
             const data = req.body
             const updatedDoc = {
@@ -205,6 +208,13 @@ async function run() {
             const options = { upsert: true }
             const filter = { name: data?.name }
             const result = await extraInfoCollection.updateOne(filter, updatedDoc, options)
+            res.send(result)
+        })
+
+        // get extra info data
+
+        app.get('/extraInfoData', async (req, res) => {
+            const result = await extraInfoCollection.find().toArray()
             res.send(result)
         })
 
