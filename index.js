@@ -36,6 +36,7 @@ async function run() {
         const pendingOrderCollection = client.db('banglesDB').collection('pendingOrderCollection')
         const ordersDoneCollection = client.db('banglesDB').collection('ordersDoneCollection')
         const extraInfoCollection = client.db('banglesDB').collection('extraInfoCollection')
+        const notificationCollection = client.db('banglesDB').collection('notificationCollection')
 
 
         // TODO: need to make the discount calculation here 
@@ -46,6 +47,10 @@ async function run() {
         })
         app.post('/bangles', async (req, res) => {
             const data = req.body
+            const discount = data?.discount
+            const price = data?.price
+            const finalPrice = price - (price * discount / 100)
+            data.discountedPrice = parseInt(finalPrice)
             const result = await banglesCollection.insertOne(data)
             res.send(result)
         })
@@ -142,6 +147,12 @@ async function run() {
         // user order data
         app.post('/user/orderItems', async (req, res) => {
             const data = req.body
+            console.log(data)
+            const name = data?.name
+            const orders = data?.orders
+            const orderDate = data?.orderDate
+            const notificationData = { name, orders, orderDate }
+            const insertNotification = await notificationCollection.insertOne(notificationData)
             const result = await pendingOrderCollection.insertOne(data)
             res.send(result)
         })
@@ -218,6 +229,28 @@ async function run() {
             res.send(result)
         })
 
+        // get notification Data
+
+        app.get('/notificationData', async (req, res) => {
+            const result = await notificationCollection.find().toArray()
+            res.send(result)
+        })
+
+        // delete notification
+        app.delete('/deleteNotification/:id', async (req, res) => {
+            const id = req.params.id
+            const filter = { _id: new ObjectId(id) }
+            const result = await notificationCollection.deleteOne(filter)
+            res.send(result)
+        })
+
+
+        // delete all notification
+
+        app.delete('/deleteAllNotification', async (req, res) => {
+            const result = await notificationCollection.deleteMany()
+            res.send(result)
+        })
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
