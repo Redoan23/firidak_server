@@ -49,8 +49,10 @@ async function run() {
             const data = req.body
             const discount = data?.discount
             const price = data?.price
-            const finalPrice = price - (price * discount / 100)
-            data.discountedPrice = parseInt(finalPrice)
+            if (discount) {
+                const finalPrice = price - (price * discount / 100)
+                data.discountedPrice = parseInt(finalPrice)
+            }
             const result = await banglesCollection.insertOne(data)
             res.send(result)
         })
@@ -253,8 +255,8 @@ async function run() {
         })
 
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        // await client.db("admin").command({ ping: 1 });
+        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
