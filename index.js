@@ -10,6 +10,7 @@ app.use(express.json())
 app.use(cors({
     credentials: [
         'http://localhost:5173',
+        'https://firidak.web.app'
     ]
 }))
 
@@ -34,6 +35,8 @@ async function run() {
         const userCollection = client.db('banglesDB').collection('userCollection')
         const registerCollection = client.db('banglesDB').collection('registerCollection')
         const pendingOrderCollection = client.db('banglesDB').collection('pendingOrderCollection')
+        const pendingReviewCollection = client.db('banglesDB').collection('pendingReviewCollection')
+        const reviewCollection = client.db('banglesDB').collection('reviewCollection')
         const ordersDoneCollection = client.db('banglesDB').collection('ordersDoneCollection')
         const extraInfoCollection = client.db('banglesDB').collection('extraInfoCollection')
         const notificationCollection = client.db('banglesDB').collection('notificationCollection')
@@ -253,6 +256,52 @@ async function run() {
             const result = await notificationCollection.deleteMany()
             res.send(result)
         })
+
+
+        // review pending
+
+        app.post('/pendingReview', async (req, res) => {
+            const data = req.body
+            const result = await pendingReviewCollection.insertOne(data)
+            res.send(result)
+        })
+
+        // get pending review
+
+        app.get('/pendingReviews', async (req, res) => {
+            const result = await pendingReviewCollection.find().toArray()
+            res.send(result)
+        })
+
+        // accept review
+
+        app.post('/acceptedReview/:id', async (req, res) => {
+            const id = req.params.id
+            const filter = { _id: new ObjectId(id) }
+            const data = req.body
+            const deleteFromPending = await pendingReviewCollection.deleteOne(filter)
+            const insertReview = await reviewCollection.insertOne(data)
+            res.send(insertReview)
+        })
+
+        // delete review
+        app.delete('/deleteReview/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await pendingReviewCollection.deleteOne(query)
+            res.send(result)
+        })
+
+        // get review
+        app.get('/review/:id', async (req, res) => {
+            const itemId = req.params.id
+            const query = { itemId: itemId }
+            const result = await reviewCollection.find(query).toArray()
+            res.send(result)
+        })
+
+
+
 
         // Send a ping to confirm a successful connection
         // await client.db("admin").command({ ping: 1 });
