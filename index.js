@@ -302,6 +302,25 @@ async function run() {
 
 
 
+        // search item
+        app.get('/searchItem/:searchText', async (req, res) => {
+            const searchText = req.params.searchText
+            const query = {
+                $or: [
+                    { name: { $regex: searchText, $options: 'i' } },
+                    { category: { $regex: searchText, $options: 'i' } }
+                ]
+            }
+            const result = await banglesCollection.find(query).toArray()
+            res.send(result)
+        })
+
+
+
+
+
+
+
 
         // Send a ping to confirm a successful connection
         // await client.db("admin").command({ ping: 1 });
