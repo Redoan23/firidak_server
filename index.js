@@ -285,6 +285,7 @@ async function run() {
         })
 
         // delete review
+
         app.delete('/deleteReview/:id', async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
@@ -292,7 +293,17 @@ async function run() {
             res.send(result)
         })
 
+        // delete accepted review
+
+        app.delete('/deletePostedReview/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: id }
+            const result = await reviewCollection.deleteOne(query)
+            res.send(result)
+        })
+
         // get review
+
         app.get('/review/:id', async (req, res) => {
             const itemId = req.params.id
             const query = { itemId: itemId }
